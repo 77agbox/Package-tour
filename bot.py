@@ -278,13 +278,15 @@ async def show_masterclass_list(message: types.Message, state: FSMContext):
 
     active_mcs = [mc for mc in MASTERCLASSES if mc["available"]]
     if not active_mcs:
-    await message.answer(
-        "На данный момент активных мастер-классов нет 😔\n\n"
-        "Мы регулярно добавляем новые занятия! Как только появится интересный мастер-класс — сразу сообщим.\n\n"
-        "А пока можете подобрать пакетный тур для группы — жмите кнопку ниже 👇",
-        reply_markup=main_kb
-    )
-    return
+        await message.answer(
+            "На данный момент активных мастер-классов нет 😔\n\n"
+            "Мы регулярно добавляем новые занятия! Как только появится интересный мастер-класс — сразу сообщим.\n\n"
+            "А пока можете подобрать пакетный тур для группы — жмите кнопку ниже 👇",
+            reply_markup=main_kb
+        )
+        return
+
+    # остальной код функции (построение клавиатуры и т.д.)
 
     builder = ReplyKeyboardBuilder()
     for mc in active_mcs:
@@ -402,4 +404,5 @@ async def mc_phone(message: types.Message, state: FSMContext):
         disable_web_page_preview=False
     )
     await state.clear()
+
 
