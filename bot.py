@@ -13,10 +13,10 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 # ──────────────────────────────────────────────
 TOKEN = "8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q"
 
-# Замени на реальные ID, когда будут известны
+# Замени на реальные ID
 MANAGERS = {
-    "Александр": 462740408,   # ← твой ID (пока placeholder)
-    "Алексей":    987654321,  # ← замени на реальный ID Алексея
+    "Александр": 462740408,
+    "Алексей":    987654321,  # ← реальный ID Алексея
 }
 
 # ──────────────────────────────────────────────
@@ -36,7 +36,7 @@ bot = Bot(token=TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
-# ─── ПАКЕТНЫЕ ТУРЫ ───────────────────────────────────────────────────────────
+# ─── ПАКЕТНЫЕ ТУРЫ (без изменений) ───────────────────────────────────────────
 
 PACKAGE_MODULES = {
     "Картинг": {"prices": [2200, 2100, 2000]},
@@ -54,7 +54,7 @@ class PackageForm(StatesGroup):
     phone = State()
     date = State()
 
-# ─── МАСТЕР-КЛАССЫ (обновляй здесь) ─────────────────────────────────────────
+# ─── МАСТЕР-КЛАССЫ (обновлённая структура) ───────────────────────────────────
 
 MASTERCLASSES = [
     {
@@ -63,16 +63,25 @@ MASTERCLASSES = [
         "time": "17:00",
         "price": 1500,
         "address": "Газопровод д.4",
+        "description_link": "https://t.me/dyutsvictory/3726",
         "available": True
     },
-    # Добавляй новые мастер-классы сюда
+    # Примеры будущих мастер-классов (добавляй по мере появления)
+    # {
+    #     "title": "Роспись пряников",
+    #     "date": "15.03.2026",
+    #     "time": "14:00",
+    #     "price": 1800,
+    #     "address": "СП Щербинка",
+    #     "description_link": "https://t.me/dyutsvictory/XXXX",
+    #     "available": True
+    # },
 ]
 
 class MasterclassForm(StatesGroup):
     choice = State()
     name = State()
     phone = State()
-    comment = State()
 
 # ─── КЛАВИАТУРЫ ──────────────────────────────────────────────────────────────
 
@@ -95,7 +104,7 @@ def get_activities_keyboard(selected=None):
     builder.adjust(2)
     return builder.as_markup(resize_keyboard=True)
 
-# ─── ПЕРЕНАПРАВЛЕНИЕ ИЗ ГРУППЫ В ЛИЧКУ ──────────────────────────────────────
+# ─── ПЕРЕНАПРАВЛЕНИЕ ИЗ ГРУППЫ ──────────────────────────────────────────────
 
 @dp.message(lambda m: m.chat.type in ["group", "supergroup"])
 async def group_redirect(message: types.Message):
@@ -125,7 +134,7 @@ async def cmd_start(message: types.Message):
         reply_markup=main_kb
     )
 
-# ─── ПАКЕТНЫЕ ТУРЫ ───────────────────────────────────────────────────────────
+# ─── ПАКЕТНЫЕ ТУРЫ (без изменений) ───────────────────────────────────────────
 
 @dp.message(lambda m: m.text == "Пакетные туры")
 async def start_package(message: types.Message, state: FSMContext):
@@ -238,7 +247,7 @@ async def package_finish(message: types.Message, state: FSMContext):
     await message.answer("Запрос отправлен менеджерам. Скоро с вами свяжутся!", reply_markup=main_kb)
     await state.clear()
 
-# ─── МАСТЕР-КЛАССЫ ───────────────────────────────────────────────────────────
+# ─── МАСТЕР-КЛАССЫ (обновлённая логика) ─────────────────────────────────────
 
 @dp.message(lambda m: m.text == "Мастер-классы")
 async def start_masterclass(message: types.Message, state: FSMContext):
@@ -246,72 +255,82 @@ async def start_masterclass(message: types.Message, state: FSMContext):
         await group_redirect(message)
         return
 
-    if not any(mc["available"] for mc in MASTERCLASSES):
+    active_mcs = [mc for mc in MASTERCLASSES if mc["available"]]
+    if not active_mcs:
         await message.answer("На данный момент нет активных мастер-классов.")
         return
 
     builder = ReplyKeyboardBuilder()
-    for mc in MASTERCLASSES:
-        if mc["available"]:
-            text = f"{mc['title']} — {mc['date']} {mc['time']}"
-            builder.button(text=text)
+    for mc in active_mcs:
+        text = f"{mc['title']} — {mc['date']} {mc['time']} — {mc['address']}"
+        builder.button(text=text)
     builder.adjust(1)
 
-    await message.answer("Выберите мастер-класс:", reply_markup=builder.as_markup(resize_keyboard=True))
+    await message.answer(
+        "Выберите мастер-класс (с указанием адреса):",
+        reply_markup=builder.as_markup(resize_keyboard=True)
+    )
     await state.set_state(MasterclassForm.choice)
 
 @dp.message(MasterclassForm.choice)
 async def mc_choice(message: types.Message, state: FSMContext):
-    title = message.text.split(" — ")[0]
-    selected_mc = next((mc for mc in MASTERCLASSES if mc["title"] == title and mc["available"]), None)
+    # Извлекаем название (до " — ")
+    title_part = message.text.split(" — ")[0]
+    selected_mc = next((mc for mc in MASTERCLASSES if mc["title"] == title_part and mc["available"]), None)
+
     if not selected_mc:
         await message.answer("Этот мастер-класс недоступен. Выберите другой.")
         return
 
     await state.update_data(selected_mc=selected_mc)
+
+    description = (
+        f"Описание мастер-класса «{selected_mc['title']}»:\n"
+        f"{selected_mc['description_link']}\n\n"
+    )
+
+    await message.answer(
+        description +
+        "Как к вам обращаться? (имя)",
+        reply_markup=ReplyKeyboardRemove(),
+        disable_web_page_preview=False  # чтобы ссылка стала кликабельной
+    )
     await state.set_state(MasterclassForm.name)
-    await message.answer("Как к вам обращаться?", reply_markup=ReplyKeyboardRemove())
 
 @dp.message(MasterclassForm.name)
 async def mc_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text.strip())
     await state.set_state(MasterclassForm.phone)
-    await message.answer("Ваш номер телефона")
+    await message.answer("Ваш номер телефона для связи")
 
 @dp.message(MasterclassForm.phone)
 async def mc_phone(message: types.Message, state: FSMContext):
-    await state.update_data(phone=message.text.strip())
-    await state.set_state(MasterclassForm.comment)
-    await message.answer("Есть пожелания или комментарии? (можно пропустить)")
-
-@dp.message(MasterclassForm.comment)
-async def mc_finish(message: types.Message, state: FSMContext):
     data = await state.get_data()
     mc = data["selected_mc"]
-
-    comment = message.text.strip() or "—"
 
     order_text = (
         f"🛒 Запись на мастер-класс\n\n"
         f"Мастер-класс: {mc['title']}\n"
         f"Дата и время: {mc['date']} {mc['time']}\n"
+        f"Адрес: {mc['address']}\n"
         f"Стоимость: {mc['price']} ₽\n"
-        f"Адрес: {mc['address']}\n\n"
+        f"Описание: {mc['description_link']}\n\n"
         f"Клиент: {data.get('name')}\n"
-        f"Телефон: {data.get('phone')}\n"
-        f"Комментарий: {comment}"
+        f"Телефон: {message.text.strip()}"
     )
 
     for name, uid in MANAGERS.items():
         try:
-            await bot.send_message(uid, order_text, parse_mode="HTML")
+            await bot.send_message(uid, order_text, parse_mode="HTML", disable_web_page_preview=False)
         except Exception as e:
             logger.error(f"Ошибка отправки {name}: {e}")
 
     await message.answer(
-        f"Вы записаны на «{mc['title']}»!\n"
-        "Менеджер свяжется с вами для подтверждения.",
-        reply_markup=main_kb
+        f"Вы записаны на «{mc['title']}» ({mc['address']})!\n"
+        "Менеджер свяжется с вами для подтверждения.\n\n"
+        f"Подробности: {mc['description_link']}",
+        reply_markup=main_kb,
+        disable_web_page_preview=False
     )
     await state.clear()
 
