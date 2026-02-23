@@ -13,7 +13,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 # ──────────────────────────────────────────────
 TOKEN = "8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q"
 
-# Замени на реальные ID, когда будут
+# Замени на реальные ID
 MANAGERS = {
     "Александр": 462740408,
     "Алексей":    987654321,  # ← реальный ID Алексея
@@ -66,7 +66,7 @@ MASTERCLASSES = [
         "description_link": "https://t.me/dyutsvictory/3726",
         "available": True
     },
-    # Добавляй новые
+    # Добавляй новые мастер-классы сюда
 ]
 
 class MasterclassForm(StatesGroup):
@@ -286,13 +286,22 @@ async def select_masterclass(message: types.Message, state: FSMContext):
         [InlineKeyboardButton(text="Назад к списку", callback_data="mc_back_to_list")]
     ])
 
+    # Отправляем сообщение с информацией и сразу убираем reply-клавиатуру
     await message.answer(
         f"Вы выбрали: {selected_mc['title']}\n"
         f"Когда: {selected_mc['date']} в {selected_mc['time']}\n"
         f"Где: {selected_mc['address']}\n"
-        f"Стоимость: {selected_mc['price']} ₽",
-        reply_markup=keyboard
+        f"Стоимость: {selected_mc['price']} ₽\n\n"
+        "Выберите действие:",
+        reply_markup=keyboard  # inline-кнопки
     )
+
+    # Убираем reply-клавиатуру без видимых сообщений
+    await bot.delete_message(
+        chat_id=message.chat.id,
+        message_id=message.message_id  # удаляем само сообщение с выбором МК
+    )
+
     await state.set_state(MasterclassForm.detail_view)
 
 @dp.callback_query(lambda c: c.data.startswith("mc_"))
