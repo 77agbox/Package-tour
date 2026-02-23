@@ -13,7 +13,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 # ──────────────────────────────────────────────
 TOKEN = "8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q"
 
-# Замени на реальные ID
+# Замени на реальные ID, когда будут известны
 MANAGERS = {
     "Александр": 462740408,
     "Алексей":    987654321,  # ← реальный ID Алексея
@@ -36,7 +36,7 @@ bot = Bot(token=TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
-# ─── ПАКЕТНЫЕ ТУРЫ (без изменений) ───────────────────────────────────────────
+# ─── ПАКЕТНЫЕ ТУРЫ ───────────────────────────────────────────────────────────
 
 PACKAGE_MODULES = {
     "Картинг": {"prices": [2200, 2100, 2000]},
@@ -54,7 +54,7 @@ class PackageForm(StatesGroup):
     phone = State()
     date = State()
 
-# ─── МАСТЕР-КЛАССЫ (обновлённая структура) ───────────────────────────────────
+# ─── МАСТЕР-КЛАССЫ ───────────────────────────────────────────────────────────
 
 MASTERCLASSES = [
     {
@@ -66,20 +66,12 @@ MASTERCLASSES = [
         "description_link": "https://t.me/dyutsvictory/3726",
         "available": True
     },
-    # Примеры будущих мастер-классов (добавляй по мере появления)
-    # {
-    #     "title": "Роспись пряников",
-    #     "date": "15.03.2026",
-    #     "time": "14:00",
-    #     "price": 1800,
-    #     "address": "СП Щербинка",
-    #     "description_link": "https://t.me/dyutsvictory/XXXX",
-    #     "available": True
-    # },
+    # Добавляй новые мастер-классы сюда по мере появления
 ]
 
 class MasterclassForm(StatesGroup):
-    choice = State()
+    list_view = State()
+    detail_view = State()
     name = State()
     phone = State()
 
@@ -134,7 +126,7 @@ async def cmd_start(message: types.Message):
         reply_markup=main_kb
     )
 
-# ─── ПАКЕТНЫЕ ТУРЫ (без изменений) ───────────────────────────────────────────
+# ─── ПАКЕТНЫЕ ТУРЫ ───────────────────────────────────────────────────────────
 
 @dp.message(lambda m: m.text == "Пакетные туры")
 async def start_package(message: types.Message, state: FSMContext):
@@ -249,27 +241,6 @@ async def package_finish(message: types.Message, state: FSMContext):
 
 # ─── МАСТЕР-КЛАССЫ ───────────────────────────────────────────────────────────
 
-MASTERCLASSES = [
-    {
-        "title": "Сумочка для телефона",
-        "date": "04.03.2026",
-        "time": "17:00",
-        "price": 1500,
-        "address": "Газопровод д.4",
-        "description_link": "https://t.me/dyutsvictory/3726",
-        "available": True
-    },
-    # Добавляй новые сюда по мере появления
-]
-
-class MasterclassForm(StatesGroup):
-    list_view = State()     # просмотр списка
-    detail_view = State()   # просмотр подробностей одного МК
-    name = State()
-    phone = State()
-
-# ─── Показ списка мастер-классов ─────────────────────────────────────────────
-
 @dp.message(lambda m: m.text == "Мастер-классы")
 async def show_masterclass_list(message: types.Message, state: FSMContext):
     if message.chat.type != "private":
@@ -286,8 +257,6 @@ async def show_masterclass_list(message: types.Message, state: FSMContext):
         )
         return
 
-    # остальной код функции (построение клавиатуры и т.д.)
-
     builder = ReplyKeyboardBuilder()
     for mc in active_mcs:
         text = f"{mc['title']} — {mc['date']} {mc['time']} — {mc['address']}"
@@ -300,8 +269,6 @@ async def show_masterclass_list(message: types.Message, state: FSMContext):
     )
     await state.set_state(MasterclassForm.list_view)
 
-# ─── Обработка выбора мастер-класса из списка ───────────────────────────────
-
 @dp.message(MasterclassForm.list_view)
 async def select_masterclass(message: types.Message, state: FSMContext):
     title_part = message.text.split(" — ")[0]
@@ -311,10 +278,8 @@ async def select_masterclass(message: types.Message, state: FSMContext):
         await message.answer("Выберите мастер-класс из списка.")
         return
 
-    # Сохраняем выбранный МК
     await state.update_data(selected_mc=selected_mc)
 
-    # Кнопки Подробнее / Записаться / Назад
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Подробнее", callback_data=f"mc_detail_{selected_mc['title']}")],
         [InlineKeyboardButton(text="Записаться", callback_data=f"mc_signup_{selected_mc['title']}")],
@@ -330,16 +295,13 @@ async def select_masterclass(message: types.Message, state: FSMContext):
     )
     await state.set_state(MasterclassForm.detail_view)
 
-# ─── Обработка inline-кнопок ─────────────────────────────────────────────────
-
 @dp.callback_query(lambda c: c.data.startswith("mc_"))
 async def handle_mc_callback(callback: types.CallbackQuery, state: FSMContext):
     data = callback.data
 
     if data == "mc_back_to_list":
-        await state.clear()
-        await callback.message.delete()  # удаляем сообщение с кнопками
-        await show_masterclass_list(callback.message, state)  # показываем список заново
+        await callback.message.delete()
+        await show_masterclass_list(callback.message, state)
         await callback.answer()
 
     elif data.startswith("mc_detail_"):
@@ -365,8 +327,6 @@ async def handle_mc_callback(callback: types.CallbackQuery, state: FSMContext):
                 reply_markup=ReplyKeyboardRemove()
             )
         await callback.answer()
-
-# ─── Анкета после «Записаться» ──────────────────────────────────────────────
 
 @dp.message(MasterclassForm.name)
 async def mc_name(message: types.Message, state: FSMContext):
@@ -405,4 +365,17 @@ async def mc_phone(message: types.Message, state: FSMContext):
     )
     await state.clear()
 
+# ─── ЗАПУСК ──────────────────────────────────────────────────────────────────
 
+async def main():
+    try:
+        me = await bot.get_me()
+        logger.info(f"Бот запущен как @{me.username}")
+        await bot.delete_webhook(drop_pending_updates=True)
+    except Exception as e:
+        logger.error(f"Ошибка при запуске: {e}")
+
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
