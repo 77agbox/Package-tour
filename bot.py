@@ -247,10 +247,31 @@ async def package_finish(message: types.Message, state: FSMContext):
     await message.answer("Запрос отправлен менеджерам. Скоро с вами свяжутся!", reply_markup=main_kb)
     await state.clear()
 
-# ─── МАСТЕР-КЛАССЫ (обновлённая логика) ─────────────────────────────────────
+# ─── МАСТЕР-КЛАССЫ ───────────────────────────────────────────────────────────
+
+MASTERCLASSES = [
+    {
+        "title": "Сумочка для телефона",
+        "date": "04.03.2026",
+        "time": "17:00",
+        "price": 1500,
+        "address": "Газопровод д.4",
+        "description_link": "https://t.me/dyutsvictory/3726",
+        "available": True
+    },
+    # Добавляй новые сюда по мере появления
+]
+
+class MasterclassForm(StatesGroup):
+    list_view = State()     # просмотр списка
+    detail_view = State()   # просмотр подробностей одного МК
+    name = State()
+    phone = State()
+
+# ─── Показ списка мастер-классов ─────────────────────────────────────────────
 
 @dp.message(lambda m: m.text == "Мастер-классы")
-async def start_masterclass(message: types.Message, state: FSMContext):
+async def show_masterclass_list(message: types.Message, state: FSMContext):
     if message.chat.type != "private":
         await group_redirect(message)
         return
@@ -267,35 +288,78 @@ async def start_masterclass(message: types.Message, state: FSMContext):
     builder.adjust(1)
 
     await message.answer(
-        "Выберите мастер-класс (с указанием адреса):",
+        "Выберите мастер-класс:",
         reply_markup=builder.as_markup(resize_keyboard=True)
     )
-    await state.set_state(MasterclassForm.choice)
+    await state.set_state(MasterclassForm.list_view)
 
-@dp.message(MasterclassForm.choice)
-async def mc_choice(message: types.Message, state: FSMContext):
-    # Извлекаем название (до " — ")
+# ─── Обработка выбора мастер-класса из списка ───────────────────────────────
+
+@dp.message(MasterclassForm.list_view)
+async def select_masterclass(message: types.Message, state: FSMContext):
     title_part = message.text.split(" — ")[0]
     selected_mc = next((mc for mc in MASTERCLASSES if mc["title"] == title_part and mc["available"]), None)
 
     if not selected_mc:
-        await message.answer("Этот мастер-класс недоступен. Выберите другой.")
+        await message.answer("Выберите мастер-класс из списка.")
         return
 
+    # Сохраняем выбранный МК
     await state.update_data(selected_mc=selected_mc)
 
-    description = (
-        f"Описание мастер-класса «{selected_mc['title']}»:\n"
-        f"{selected_mc['description_link']}\n\n"
-    )
+    # Кнопки Подробнее / Записаться / Назад
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Подробнее", callback_data=f"mc_detail_{selected_mc['title']}")],
+        [InlineKeyboardButton(text="Записаться", callback_data=f"mc_signup_{selected_mc['title']}")],
+        [InlineKeyboardButton(text="Назад к списку", callback_data="mc_back_to_list")]
+    ])
 
     await message.answer(
-        description +
-        "Как к вам обращаться? (имя)",
-        reply_markup=ReplyKeyboardRemove(),
-        disable_web_page_preview=False  # чтобы ссылка стала кликабельной
+        f"Вы выбрали: {selected_mc['title']}\n"
+        f"Когда: {selected_mc['date']} в {selected_mc['time']}\n"
+        f"Где: {selected_mc['address']}\n"
+        f"Стоимость: {selected_mc['price']} ₽",
+        reply_markup=keyboard
     )
-    await state.set_state(MasterclassForm.name)
+    await state.set_state(MasterclassForm.detail_view)
+
+# ─── Обработка inline-кнопок ─────────────────────────────────────────────────
+
+@dp.callback_query(lambda c: c.data.startswith("mc_"))
+async def handle_mc_callback(callback: types.CallbackQuery, state: FSMContext):
+    data = callback.data
+
+    if data == "mc_back_to_list":
+        await state.clear()
+        await callback.message.delete()  # удаляем сообщение с кнопками
+        await show_masterclass_list(callback.message, state)  # показываем список заново
+        await callback.answer()
+
+    elif data.startswith("mc_detail_"):
+        title = data.replace("mc_detail_", "")
+        mc = next((m for m in MASTERCLASSES if m["title"] == title), None)
+        if mc:
+            await callback.message.answer(
+                f"Подробное описание:\n"
+                f"{mc['description_link']}",
+                disable_web_page_preview=False
+            )
+        await callback.answer()
+
+    elif data.startswith("mc_signup_"):
+        title = data.replace("mc_signup_", "")
+        mc = next((m for m in MASTERCLASSES if m["title"] == title), None)
+        if mc:
+            await state.update_data(selected_mc=mc)
+            await state.set_state(MasterclassForm.name)
+            await callback.message.answer(
+                f"Запись на «{mc['title']}» ({mc['address']})\n\n"
+                "Как к вам обращаться? (имя)",
+                reply_markup=ReplyKeyboardRemove()
+            )
+        await callback.answer()
+
+# ─── Анкета после «Записаться» ──────────────────────────────────────────────
 
 @dp.message(MasterclassForm.name)
 async def mc_name(message: types.Message, state: FSMContext):
@@ -333,18 +397,3 @@ async def mc_phone(message: types.Message, state: FSMContext):
         disable_web_page_preview=False
     )
     await state.clear()
-
-# ─── ЗАПУСК ──────────────────────────────────────────────────────────────────
-
-async def main():
-    try:
-        me = await bot.get_me()
-        logger.info(f"Бот запущен как @{me.username}")
-        await bot.delete_webhook(drop_pending_updates=True)
-    except Exception as e:
-        logger.error(f"Ошибка при запуске: {e}")
-
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
