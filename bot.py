@@ -188,16 +188,16 @@ async def package_finish(message: types.Message, state: FSMContext):
         total += cost
         lines.append(f"{act}: {p} ₽/чел × {num_p} = {cost} ₽")
 
-    order_text = (
-        f"🛒 Новый пакетный тур\n\n"
-        f"Клиент: {data.get('name')}\n"
-        f"Тел: {data.get('phone')}\n"
-        f"Дата/время: {data.get('date')}\n\n"
-        f"Группа: {num_p} чел\n"
-        f"Активности ({num_act}): {', '.join(selected)}\n\n"
-        f"{'\n'.join(lines)}\n\n"
-        f"<b>Итого: {total} ₽</b>"
-    )
+   order_text = (
+    "🛒 Новый пакетный тур\n\n"
+    f"Клиент: {data.get('name')}\n"
+    f"Тел: {data.get('phone')}\n"
+    f"Дата/время: {data.get('date')}\n\n"
+    f"Группа: {num_p} чел\n"
+    f"Активности ({num_act}): {', '.join(selected)}\n\n"
+    + "\n".join(lines) + "\n\n"
+    f"<b>Итого: {total} ₽</b>"
+)
 
     for name, uid in MANAGERS.items():
         try:
@@ -306,3 +306,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
