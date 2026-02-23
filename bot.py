@@ -3,7 +3,7 @@ import logging
 import sys
 
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -13,10 +13,10 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 # ──────────────────────────────────────────────
 TOKEN = "8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q"
 
-# Замени на реальные ID, когда будут
+# Замени на реальные ID, когда будут известны
 MANAGERS = {
-    "Александр": 462740408,   # ← твой текущий ID (пока placeholder)
-    "Алексей":    123456789,  # ← замени на реальный ID Алексея
+    "Александр": 462740408,   # ← твой ID (пока placeholder)
+    "Алексей":    987654321,  # ← замени на реальный ID Алексея
 }
 
 # ──────────────────────────────────────────────
@@ -39,12 +39,12 @@ dp = Dispatcher(storage=storage)
 # ─── ПАКЕТНЫЕ ТУРЫ ───────────────────────────────────────────────────────────
 
 PACKAGE_MODULES = {
-    "Картинг":          {"prices": [2200, 2100, 2000]},
-    "Симрейсинг":       {"prices": [1600, 1500, 1400]},
+    "Картинг": {"prices": [2200, 2100, 2000]},
+    "Симрейсинг": {"prices": [1600, 1500, 1400]},
     "Практическая стрельба": {"prices": [1600, 1500, 1400]},
-    "Лазертаг":         {"prices": [1600, 1500, 1400]},
-    "Керамика":         {"prices": [1600, 1500, 1400]},
-    "Мягкая игрушка":   {"prices": [1300, 1200, 1100]},
+    "Лазертаг": {"prices": [1600, 1500, 1400]},
+    "Керамика": {"prices": [1600, 1500, 1400]},
+    "Мягкая игрушка": {"prices": [1300, 1200, 1100]},
 }
 
 class PackageForm(StatesGroup):
@@ -54,7 +54,7 @@ class PackageForm(StatesGroup):
     phone = State()
     date = State()
 
-# ─── МАСТЕР-КЛАССЫ (отдельный блок — легко обновлять) ────────────────────────
+# ─── МАСТЕР-КЛАССЫ (обновляй здесь) ─────────────────────────────────────────
 
 MASTERCLASSES = [
     {
@@ -63,26 +63,18 @@ MASTERCLASSES = [
         "time": "17:00",
         "price": 1500,
         "address": "Газопровод д.4",
-        "available": True  # можно ставить False, если занят/отменён
+        "available": True
     },
-    # Добавляй новые мастер-классы сюда, например:
-    # {
-    #     "title": "Роспись пряников",
-    #     "date": "15.03.2026",
-    #     "time": "14:00",
-    #     "price": 1800,
-    #     "address": "Газопровод д.4",
-    #     "available": True
-    # },
+    # Добавляй новые мастер-классы сюда
 ]
 
 class MasterclassForm(StatesGroup):
     choice = State()
     name = State()
     phone = State()
-    comment = State()  # опционально
+    comment = State()
 
-# ─── ОБЩИЕ КЛАВИАТУРЫ ────────────────────────────────────────────────────────
+# ─── КЛАВИАТУРЫ ──────────────────────────────────────────────────────────────
 
 def get_main_keyboard() -> types.ReplyKeyboardMarkup:
     builder = ReplyKeyboardBuilder()
@@ -93,9 +85,9 @@ def get_main_keyboard() -> types.ReplyKeyboardMarkup:
 
 main_kb = get_main_keyboard()
 
-def get_activities_keyboard(selected: list = None) -> types.ReplyKeyboardMarkup:
-    builder = ReplyKeyboardBuilder()
+def get_activities_keyboard(selected=None):
     selected = selected or []
+    builder = ReplyKeyboardBuilder()
     for module in PACKAGE_MODULES:
         text = f"{module} {'✅' if module in selected else ''}"
         builder.button(text=text)
@@ -103,17 +95,15 @@ def get_activities_keyboard(selected: list = None) -> types.ReplyKeyboardMarkup:
     builder.adjust(2)
     return builder.as_markup(resize_keyboard=True)
 
-# ─── ОБРАБОТКА ГРУПП / СООБЩЕСТВ ─────────────────────────────────────────────
+# ─── ПЕРЕНАПРАВЛЕНИЕ ИЗ ГРУППЫ В ЛИЧКУ ──────────────────────────────────────
 
 @dp.message(lambda m: m.chat.type in ["group", "supergroup"])
 async def group_redirect(message: types.Message):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="Перейти в личные сообщения →",
-                url=f"https://t.me/{(await bot.get_me()).username}"
-            )
-        ]
+        [InlineKeyboardButton(
+            text="Перейти в личные сообщения →",
+            url=f"https://t.me/{(await bot.get_me()).username}"
+        )]
     ])
     await message.reply(
         "Для подбора тура или записи на мастер-класс напишите мне в личные сообщения.\n"
@@ -121,20 +111,19 @@ async def group_redirect(message: types.Message):
         reply_markup=keyboard
     )
 
-# ─── СТАРТ И ГЛАВНОЕ МЕНЮ ───────────────────────────────────────────────────
+# ─── СТАРТ ───────────────────────────────────────────────────────────────────
 
 @dp.message(CommandStart())
-@dp.message(lambda m: m.text in ["Пакетные туры", "Мастер-классы", "/start"])
 async def cmd_start(message: types.Message):
-    if message.chat.type in ["group", "supergroup"]:
+    if message.chat.type != "private":
         await group_redirect(message)
         return
 
-    text = (
+    await message.answer(
         "Добро пожаловать в бот Центра «Виктория»!\n\n"
-        "Выберите, что вас интересует:"
+        "Выберите, что вас интересует:",
+        reply_markup=main_kb
     )
-    await message.answer(text, reply_markup=main_kb)
 
 # ─── ПАКЕТНЫЕ ТУРЫ ───────────────────────────────────────────────────────────
 
@@ -166,10 +155,49 @@ async def package_num_people(message: types.Message, state: FSMContext):
     except ValueError:
         await message.answer("Пожалуйста, введите число.")
 
-# ... (остальные хендлеры для пакетных туров как в предыдущей версии — process_activities, name, phone, date)
-# В конце process_date_and_finish отправка менеджерам:
+@dp.message(PackageForm.activities)
+async def package_activities(message: types.Message, state: FSMContext):
+    text = message.text.strip()
+    if text == "Готово":
+        data = await state.get_data()
+        selected = data.get("selected_activities", [])
+        if not 1 <= len(selected) <= 3:
+            await message.answer("Выберите от 1 до 3 активностей.")
+            return
+        await state.set_state(PackageForm.name)
+        await message.answer("Как к вам обращаться? (имя)", reply_markup=ReplyKeyboardRemove())
+        return
 
-# Пример финального хендлера (добавь/замени свой)
+    data = await state.get_data()
+    selected = data.get("selected_activities", [])
+    module_name = text.replace(" ✅", "")
+    if module_name in PACKAGE_MODULES:
+        if module_name in selected:
+            selected.remove(module_name)
+        else:
+            if len(selected) < 3:
+                selected.append(module_name)
+            else:
+                await message.answer("Максимум 3 активности.")
+                return
+        await state.update_data(selected_activities=selected)
+        await message.answer(
+            "Выбрано: " + ", ".join(selected) if selected else "Пока ничего",
+            reply_markup=get_activities_keyboard(selected)
+        )
+
+@dp.message(PackageForm.name)
+async def package_name(message: types.Message, state: FSMContext):
+    await state.update_data(name=message.text.strip())
+    await state.set_state(PackageForm.phone)
+    await message.answer("Ваш номер телефона для связи")
+
+@dp.message(PackageForm.phone)
+async def package_phone(message: types.Message, state: FSMContext):
+    await state.update_data(phone=message.text.strip())
+    await state.set_state(PackageForm.date)
+    await message.answer("Желаемая дата и время (или «любое»)")
+
 @dp.message(PackageForm.date)
 async def package_finish(message: types.Message, state: FSMContext):
     data = await state.get_data()
@@ -188,16 +216,18 @@ async def package_finish(message: types.Message, state: FSMContext):
         total += cost
         lines.append(f"{act}: {p} ₽/чел × {num_p} = {cost} ₽")
 
-   order_text = (
-    "🛒 Новый пакетный тур\n\n"
-    f"Клиент: {data.get('name')}\n"
-    f"Тел: {data.get('phone')}\n"
-    f"Дата/время: {data.get('date')}\n\n"
-    f"Группа: {num_p} чел\n"
-    f"Активности ({num_act}): {', '.join(selected)}\n\n"
-    + "\n".join(lines) + "\n\n"
-    f"<b>Итого: {total} ₽</b>"
-)
+    lines_text = "\n".join(lines)
+
+    order_text = (
+        "🛒 Новый пакетный тур\n\n"
+        f"Клиент: {data.get('name')}\n"
+        f"Тел: {data.get('phone')}\n"
+        f"Дата/время: {data.get('date')}\n\n"
+        f"Группа: {num_p} чел\n"
+        f"Активности ({num_act}): {', '.join(selected)}\n\n"
+        f"{lines_text}\n\n"
+        f"<b>Итого: {total} ₽</b>"
+    )
 
     for name, uid in MANAGERS.items():
         try:
@@ -205,7 +235,7 @@ async def package_finish(message: types.Message, state: FSMContext):
         except Exception as e:
             logger.error(f"Ошибка отправки {name} ({uid}): {e}")
 
-    await message.answer("Ваш запрос отправлен менеджерам. Скоро с вами свяжутся!")
+    await message.answer("Запрос отправлен менеджерам. Скоро с вами свяжутся!", reply_markup=main_kb)
     await state.clear()
 
 # ─── МАСТЕР-КЛАССЫ ───────────────────────────────────────────────────────────
@@ -216,7 +246,7 @@ async def start_masterclass(message: types.Message, state: FSMContext):
         await group_redirect(message)
         return
 
-    if not MASTERCLASSES:
+    if not any(mc["available"] for mc in MASTERCLASSES):
         await message.answer("На данный момент нет активных мастер-классов.")
         return
 
@@ -227,26 +257,20 @@ async def start_masterclass(message: types.Message, state: FSMContext):
             builder.button(text=text)
     builder.adjust(1)
 
-    await message.answer(
-        "Выберите мастер-класс:",
-        reply_markup=builder.as_markup(resize_keyboard=True)
-    )
+    await message.answer("Выберите мастер-класс:", reply_markup=builder.as_markup(resize_keyboard=True))
     await state.set_state(MasterclassForm.choice)
 
 @dp.message(MasterclassForm.choice)
 async def mc_choice(message: types.Message, state: FSMContext):
     title = message.text.split(" — ")[0]
-    selected_mc = next((mc for mc in MASTERCLASSES if mc["title"] == title), None)
-
-    if not selected_mc or not selected_mc["available"]:
+    selected_mc = next((mc for mc in MASTERCLASSES if mc["title"] == title and mc["available"]), None)
+    if not selected_mc:
         await message.answer("Этот мастер-класс недоступен. Выберите другой.")
         return
 
     await state.update_data(selected_mc=selected_mc)
     await state.set_state(MasterclassForm.name)
     await message.answer("Как к вам обращаться?", reply_markup=ReplyKeyboardRemove())
-
-# ... (дальше name → phone → comment → finish)
 
 @dp.message(MasterclassForm.name)
 async def mc_name(message: types.Message, state: FSMContext):
@@ -258,22 +282,24 @@ async def mc_name(message: types.Message, state: FSMContext):
 async def mc_phone(message: types.Message, state: FSMContext):
     await state.update_data(phone=message.text.strip())
     await state.set_state(MasterclassForm.comment)
-    await message.answer("Есть ли пожелания / комментарии? (можно пропустить)")
+    await message.answer("Есть пожелания или комментарии? (можно пропустить)")
 
 @dp.message(MasterclassForm.comment)
 async def mc_finish(message: types.Message, state: FSMContext):
     data = await state.get_data()
     mc = data["selected_mc"]
 
+    comment = message.text.strip() or "—"
+
     order_text = (
         f"🛒 Запись на мастер-класс\n\n"
         f"Мастер-класс: {mc['title']}\n"
-        f"Дата: {mc['date']} {mc['time']}\n"
+        f"Дата и время: {mc['date']} {mc['time']}\n"
         f"Стоимость: {mc['price']} ₽\n"
         f"Адрес: {mc['address']}\n\n"
         f"Клиент: {data.get('name')}\n"
         f"Телефон: {data.get('phone')}\n"
-        f"Комментарий: {message.text.strip() or '—'}"
+        f"Комментарий: {comment}"
     )
 
     for name, uid in MANAGERS.items():
@@ -284,7 +310,8 @@ async def mc_finish(message: types.Message, state: FSMContext):
 
     await message.answer(
         f"Вы записаны на «{mc['title']}»!\n"
-        "Менеджер свяжется с вами для подтверждения."
+        "Менеджер свяжется с вами для подтверждения.",
+        reply_markup=main_kb
     )
     await state.clear()
 
@@ -294,11 +321,7 @@ async def main():
     try:
         me = await bot.get_me()
         logger.info(f"Бот запущен как @{me.username}")
-
-        # Удаляем webhook
         await bot.delete_webhook(drop_pending_updates=True)
-
-        # Можно добавить set_my_commands, если нужно
     except Exception as e:
         logger.error(f"Ошибка при запуске: {e}")
 
@@ -306,4 +329,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
