@@ -13,7 +13,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 # ──────────────────────────────────────────────
 TOKEN = "8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q"
 
-# Замени на реальные ID, когда будут известны
+# Замени на реальные ID, когда будут
 MANAGERS = {
     "Александр": 462740408,
     "Алексей":    987654321,  # ← реальный ID Алексея
@@ -66,7 +66,7 @@ MASTERCLASSES = [
         "description_link": "https://t.me/dyutsvictory/3726",
         "available": True
     },
-    # Добавляй новые мастер-классы сюда по мере появления
+    # Добавляй новые
 ]
 
 class MasterclassForm(StatesGroup):
