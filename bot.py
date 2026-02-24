@@ -63,7 +63,7 @@ MASTERCLASSES = [
         "time": "17:00",
         "price": 1500,
         "address": "Газопровод д.4",
-        "description_link": "https://t.me/dyutsvictory/3726",
+        "description_link": "https://t.me/dyutsvictory/3733",
         "available": True
     },
     # Добавляй новые мастер-классы сюда
@@ -388,3 +388,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
