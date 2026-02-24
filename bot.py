@@ -10,7 +10,7 @@ from aiogram.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeybo
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 # ──────────────────────────────────────────────
-TOKEN = "8606369205:AAEc80Rdnvg8fuogozkrc3VtqbZg9zZjG1E"
+TOKEN = "8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q"  # токен @Packagetour_bot
 ADMIN_ID = 462740408  # @sergienkoalvl
 # ──────────────────────────────────────────────
 
