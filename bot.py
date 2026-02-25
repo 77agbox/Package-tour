@@ -54,6 +54,13 @@ MASTERCLASSES = {
             "time": "17:00",
             "price": 1500,
             "description_link": "https://t.me/dyutsvictory/3733"
+        },
+        {
+            "title": "Подсвечник Ангел",
+            "date": "25.03.2026",
+            "time": "17:00",
+            "price": 1200,
+            "description_link": "https://t.me/dyutsvictory/3769"
         }
     ],
     "СП Щербинка":      [],
@@ -461,3 +468,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
