@@ -19,13 +19,13 @@ from openpyxl import load_workbook
 
 # ================= CONFIG =================
 
-BOT_TOKEN = "8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q"
+BOT_TOKEN = "8440516015:AAGt4-nR_uKAveXZ7onALvi5VqWl4uPIw_Q"
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(
-    token="B8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q",
+    token="8440516015:AAGt4-nR_uKAveXZ7onALvi5VqWl4uPIw_Q",
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
 
