@@ -25,7 +25,7 @@ ADMIN_ID = int(os.getenv("ADMIN_ID"))
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(
-    token=BOT_TOKEN,
+    token=B8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
 
