@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import json
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
@@ -20,12 +19,12 @@ from openpyxl import load_workbook
 # ================= CONFIG =================
 
 BOT_TOKEN = "8440516015:AAGt4-nR_uKAveXZ7onALvi5VqWl4uPIw_Q"
-ADMIN_ID = int(os.getenv("ADMIN_ID"))
+ADMIN_ID = 462740408
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(
-    token="8440516015:AAGt4-nR_uKAveXZ7onALvi5VqWl4uPIw_Q",
+    token=BOT_TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
 
