@@ -19,7 +19,7 @@ from openpyxl import load_workbook
 
 # ================= CONFIG =================
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = 8440516015:AAHZ-LU5HOVLSxNaoiv1dr0xhHqy_hclN4Q
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 logging.basicConfig(level=logging.INFO)
